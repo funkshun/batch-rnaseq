@@ -21,3 +21,28 @@ Positional Arguments
 ```
 ### Notes
 By default, rnaseq searches for `VariantProbes.csv` and `SDPpositions.csv` in the current directory
+
+## JSON
+
+Individual reports consist of the following structure:
+
+```json
+{
+  "dataset": "dataset_name",
+  "timing": {
+    "load": 1.1,
+    "vote": 1.1
+  },
+  "analysis": {
+    "vote_count": 1000,
+    "results": [
+      {
+        "cross": ["cross", "name"],
+        "votes": 500
+      }
+    ]
+  }
+}
+```
+
+A combined report contains a JSON list of such entries.
