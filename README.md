@@ -14,7 +14,7 @@ The target directory can either be a single dataset containing a `comp_msbwt.npy
 Positional Arguments
 -o, --output         The path to the directory where output files are saved
 -p, --probes         The path to the file where the Variant Probes are saved
--r, --report         The type of report generated {stdout, txt, html, json} #Only stdout and txt are currently supported
+-r, --report         The type of report generated {stdout, txt, html, json} #HTML is not currently supported
 -s, --separate       Generate individual, numbered report files for each dataset
 -sdp, --sdp_lookup   File containing mapping between probe sdp vector and dataset names
 -t, --threshold      Minimum necessary occurrences to count probe vote

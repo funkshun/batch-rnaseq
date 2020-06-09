@@ -7,6 +7,7 @@
 import os, sys, time
 import itertools
 import argparse
+import json
 import pandas as pd
 import glob
 import locale
@@ -185,13 +186,31 @@ def createTextReport(path, sdps, votes, ps, timing):
 
     return report
 
-def createHTMLReport(path, sdps, votes, ps, timing, opath='.'):
+def createHTMLReport(path, sdps, votes, ps, timing):
     print('HTML Reporting Not Implemented')
     return
 
-def createJSONReport(path, sdps, votes, ps, timing, opath='.'):
-    print('JSON Reporting Not Implemented')
-    return
+def createJSONReport(path, sdps, votes, ps, timing):
+    
+    # Create Crosses
+    indices = np.unravel_index(np.argsort(-votes,axis=None), votes.shape)
+    topten  = list(zip(indices[0], indices[1]))[:10]
+
+    ret = {}
+
+    ret['dataset'] = os.path.basename(path)
+    ret['timing'] = {'load': timing[0], 'vote': timing[1]}
+    ret['analysis'] = {'vote_count': ps, 'results': []}
+
+    for i, j in topten:
+        if i == j:
+            cross = [sdps[i]]
+        else:
+            cross = [sdps[i], sdps[j]]
+
+        ret['analysis']['results'].append({'cross': cross, 'votes': int(votes[i, j])})
+
+    return ret
 
 def outputReports(reports, opath, rtype, sep):
     
@@ -204,6 +223,15 @@ def outputReports(reports, opath, rtype, sep):
             with open(os.path.join(opath, 'batch-report'), 'w') as f:
                 for report in reports:
                     f.write(report)
+    elif rtype == 'json':
+        if sep:
+            for i, report in enumerate(reports):
+                with open(os.path.join(opath, 'report' + i + '.json'), 'w') as f:
+                    json.dump(report, f)
+        else:
+            with open(os.path.join(opath, 'batch-report.json'), 'w') as f:
+                json.dump(reports, f)
+
 
 
 def senc(x):
