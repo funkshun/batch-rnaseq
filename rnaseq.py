@@ -95,8 +95,13 @@ def runQueries(tpaths, probePath, sdpPath, threshold, report_type, dump):
     reports = []
 
     for path in tpaths:
+        
+        try:
+            v, ps, t = identifySample(path, probedf, N, threshold)
+        except Exception as err:
+            sys.stderr.write('Error processing ' + os.path.basename('path') + f':\n{err}')
+            continue
 
-        v, ps, t = identifySample(path, probedf, N, threshold)
 
         if dump is not None:
             with open(os.path.join(dump, os.path.basename(path) + '-votes.npy'), 'wb') as f:
