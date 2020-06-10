@@ -48,16 +48,24 @@ def main():
 
     args = parser.parse_args()
 
+    # Handle Choice List
+    if args.report != 'txt':
+        args.report = args.report[0]
+
+    if isinstance(args.probes, list):
+        args.probes = args.probes[0]
+
+    if isinstance(args.sdp_lookup, list):
+        args.sdp_lookup = args.sdp_lookup[0]
+
     # Sanitize Paths
     args.path = os.path.normpath(args.path)
-    args.output = os.path.normpath(args.output)
+    args.probes = os.path.normpath(args.probes)
+    args.sdp_lookup = os.path.normpath(args.sdp_lookup)
 
     if args.dump is not None:
         args.dump = os.path.normpath(args.dump)
 
-    # Handle Choice List
-    if args.report != 'txt':
-        args.report = args.report[0]
 
 
     # Grab directories at target
@@ -79,8 +87,7 @@ def main():
             args.probes, args.sdp_lookup, 
             args.threshold, args.report, args.dump)
 
-    if args.report != 'stdout':
-        outputReports(reports, args.output, args.report, args.separate)
+    outputReports(reports, args.report)
 
 ################################################################################
 
@@ -238,7 +245,7 @@ def createJSONReport(path, sdps, votes, ps, timing):
 
 ################################################################################
 
-def outputReports(reports, opath, rtype, sep):
+def outputReports(reports, rtype):
 
     
     if rtype == 'txt':
