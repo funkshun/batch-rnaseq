@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/python3.8
 
 """ RNAseq Tools<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Online tools for processing RNA msBWTs
 """
 
 import os, sys, time
+import secrets
 import itertools
 import argparse
 import json
@@ -17,6 +18,8 @@ from matplotlib.colors import LinearSegmentedColormap
 import MUSCython
 import MUSCython.MultiStringBWTCython as msbwt
 
+################################################################################
+
 def main():
     
     # Argument Parsing
@@ -25,19 +28,16 @@ def main():
     parser.add_argument('path', 
             help='Dataset Directory, Single or Batch', 
             type=str)
-    parser.add_argument('-o', '--output',
-            help='Location to save output if not stdout',
-            nargs=1, type=str, default='.')
+    parser.add_argument('-d', '--dump',
+            help='Dump vote matrix for each dataset identified',
+            nargs='?', type=str, const='.')
     parser.add_argument('-p', '--probes',
             help='Path to file containing Variant Probes',
             nargs=1, type=str, default='./VariantProbes.csv')
     parser.add_argument('-r', '--report', 
             help='Report Style', 
-            nargs=1, type=str, default='stdout',
-            choices=['stdout', 'txt', 'html', 'json'])
-    parser.add_argument('-s', '--separate',
-            help='Generate separate report file for each dataset, ignored for stdout',
-            action='store_true')
+            nargs=1, type=str, default='txt',
+            choices=['txt', 'html', 'json'])
     parser.add_argument('-sdp', '--sdp_lookup',
             help='Path to file containing variant table for SDP Vector',
             nargs=1, type=str, default='./SDPpositions.csv')
@@ -48,8 +48,26 @@ def main():
 
     args = parser.parse_args()
 
-    # Sanitize Path
+    # Handle Choice List
+    if args.report != 'txt':
+        args.report = args.report[0]
+
+    if isinstance(args.probes, list):
+        args.probes = args.probes[0]
+
+    if isinstance(args.sdp_lookup, list):
+        args.sdp_lookup = args.sdp_lookup[0]
+
+    if isinstance(args.threshold, list):
+        args.threshold = args.threshold[0]
+    # Sanitize Paths
     args.path = os.path.normpath(args.path)
+    args.probes = os.path.normpath(args.probes)
+    args.sdp_lookup = os.path.normpath(args.sdp_lookup)
+
+    if args.dump is not None:
+        args.dump = os.path.normpath(args.dump)
+
 
 
     # Grab directories at target
@@ -67,14 +85,15 @@ def main():
         else:
             sys.exit(0)
 
-    reports = runQueries(tpaths, args.probes, args.sdp_lookup, args.threshold, args.report[0])
+    reports = runQueries(tpaths, 
+            args.probes, args.sdp_lookup, 
+            args.threshold, args.report, args.dump)
 
-    if args.report != 'stdout':
-        outputReports(reports, args.output, args.report[0], args.separate)
+    outputReports(reports, args.report)
 
+################################################################################
 
-
-def runQueries(tpaths, probePath, sdpPath, threshold, report_type):
+def runQueries(tpaths, probePath, sdpPath, threshold, report_type, dump):
     
     # Universals
     probedf = pd.read_csv(probePath)
@@ -85,13 +104,19 @@ def runQueries(tpaths, probePath, sdpPath, threshold, report_type):
     reports = []
 
     for path in tpaths:
-
-        v, ps, t = identifySample(path, probedf, N, threshold)
-
-        if report_type == 'stdout':
-            print(createTextReport(path, sdpLookup, v, ps, t))
+        
+        try:
+            v, ps, t = identifySample(path, probedf, N, threshold)
+        except Exception as err:
+            sys.stderr.write('Error processing ' + os.path.basename('path') + f':\n{err}')
             continue
-        elif report_type == 'txt':
+
+
+        if dump is not None:
+            with open(os.path.join(dump, os.path.basename(path) + '-votes.npy'), 'wb') as f:
+                np.save(f, v)
+
+        if report_type == 'txt':
             reports.append(createTextReport(path, sdpLookup, v, ps, t))
         elif report_type == 'html':
             reports.append(createHTMLReport(path, sdpLookup, v, ps, t))
@@ -102,6 +127,8 @@ def runQueries(tpaths, probePath, sdpPath, threshold, report_type):
 
     return reports
     
+################################################################################
+
 def identifySample(path, probedf, N, thresh):
     
     # Initialize Accumulators
@@ -116,7 +143,7 @@ def identifySample(path, probedf, N, thresh):
     
     # Voting
     start = time.time()
-    for i, row in probedf.iterrows():
+    for _, row in probedf.iterrows():
         
         if row['sdp'].find('H') >= 0:
             continue
@@ -150,6 +177,8 @@ def identifySample(path, probedf, N, thresh):
     del bwt
 
     return votes, ps, timing
+
+################################################################################
 
 def createTextReport(path, sdps, votes, ps, timing):
     
@@ -186,9 +215,13 @@ def createTextReport(path, sdps, votes, ps, timing):
 
     return report
 
+################################################################################
+
 def createHTMLReport(path, sdps, votes, ps, timing):
     print('HTML Reporting Not Implemented')
     return
+
+################################################################################
 
 def createJSONReport(path, sdps, votes, ps, timing):
     
@@ -212,32 +245,37 @@ def createJSONReport(path, sdps, votes, ps, timing):
 
     return ret
 
-def outputReports(reports, opath, rtype, sep):
+################################################################################
+
+def outputReports(reports, rtype):
+
     
     if rtype == 'txt':
-        if sep:
-            for i, report in enumerate(reports):
-                with open(os.path.join(opath, 'report' + i), 'w') as f:
-                    f.write(report)
-        else:
-            with open(os.path.join(opath, 'batch-report'), 'w') as f:
-                for report in reports:
-                    f.write(report)
+
+        for report in reports:
+            sys.stdout.write(report)
+        
     elif rtype == 'json':
-        if sep:
-            for i, report in enumerate(reports):
-                with open(os.path.join(opath, 'report' + i + '.json'), 'w') as f:
-                    json.dump(report, f)
-        else:
-            with open(os.path.join(opath, 'batch-report.json'), 'w') as f:
-                json.dump(reports, f)
+            
+        sys.stdout.write(json.dumps(reports))
 
+    sys.stdout.flush()
 
+################################################################################
 
 def senc(x):
     return x.encode('ascii', 'ignore')
 
+################################################################################
+
+def getSuffix():
+    return secrets.token_urlsafe(nbytes=8)
+
+################################################################################
+
 def ynquery(message, default='yes'):
+
+    return True
     
     if default is None:
         message += ' (y/n) '
@@ -257,6 +295,8 @@ def ynquery(message, default='yes'):
         return True if default =='yes' else False
     else:
         return None
+
+################################################################################
 
 if __name__ == '__main__':
     main()
