@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3.8
 
 """ RNAseq Tools<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Online tools for processing RNA msBWTs
@@ -58,6 +58,8 @@ def main():
     if isinstance(args.sdp_lookup, list):
         args.sdp_lookup = args.sdp_lookup[0]
 
+    if isinstance(args.threshold, list):
+        args.threshold = args.threshold[0]
     # Sanitize Paths
     args.path = os.path.normpath(args.path)
     args.probes = os.path.normpath(args.probes)
@@ -272,6 +274,8 @@ def getSuffix():
 ################################################################################
 
 def ynquery(message, default='yes'):
+
+    return True
     
     if default is None:
         message += ' (y/n) '
