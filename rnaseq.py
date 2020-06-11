@@ -4,7 +4,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;Online tools for processing RNA msBWTs
 """
 
-import os, sys, time
+import os, sys, time, csv
 import secrets
 import itertools
 import argparse
@@ -37,7 +37,7 @@ def main():
     parser.add_argument('-r', '--report', 
             help='Report Style', 
             nargs=1, type=str, default='txt',
-            choices=['txt', 'html', 'json'])
+            choices=['txt', 'html', 'json', 'csv'])
     parser.add_argument('-sdp', '--sdp_lookup',
             help='Path to file containing variant table for SDP Vector',
             nargs=1, type=str, default='./SDPpositions.csv')
@@ -60,6 +60,7 @@ def main():
 
     if isinstance(args.threshold, list):
         args.threshold = args.threshold[0]
+
     # Sanitize Paths
     args.path = os.path.normpath(args.path)
     args.probes = os.path.normpath(args.probes)
@@ -122,6 +123,8 @@ def runQueries(tpaths, probePath, sdpPath, threshold, report_type, dump):
             reports.append(createHTMLReport(path, sdpLookup, v, ps, t))
         elif report_type == 'json':
             reports.append(createJSONReport(path, sdpLookup, v, ps, t))
+        elif report_type == 'csv':
+            reports.append(createCSVReport(path, sdpLookup, v, ps, t))
         else:
             pass
 
@@ -247,8 +250,33 @@ def createJSONReport(path, sdps, votes, ps, timing):
 
 ################################################################################
 
-def outputReports(reports, rtype):
+def createCSVReport(path, sdps, votes, ps, timing):
 
+    # Create Crosses
+    indices = np.unravel_index(np.argsort(-votes,axis=None), votes.shape)
+    topten  = list(zip(indices[0], indices[1]))[:10]
+
+    ret = []
+
+    ret.append(os.path.basename(path))
+    ret.append(timing[0])
+    ret.append(timing[1])
+    ret.append(ps)
+
+    for i, j in topten:
+        if i == j:
+            cross = f'{sdps[i]}'
+        else:
+            cross = f'{sdps[i]}x{sdps[j]}'
+        
+        ret.append(cross)
+        ret.append(int(votes[i,j]))
+    
+    return ret
+
+################################################################################
+
+def outputReports(reports, rtype):
     
     if rtype == 'txt':
 
@@ -258,6 +286,40 @@ def outputReports(reports, rtype):
     elif rtype == 'json':
             
         sys.stdout.write(json.dumps(reports))
+
+    elif rtype == 'csv':
+
+        headers = [
+                "dataset",
+                "load_time",
+                "vote_time",
+                "votes",
+                "t1",
+                "t1_votes",
+                "t2",
+                "t2_votes",
+                "t3",
+                "t3_votes",
+                "t4",
+                "t4_votes",
+                "t5",
+                "t5_votes",
+                "t6",
+                "t6_votes",
+                "t7",
+                "t7_votes",
+                "t8",
+                "t8_votes",
+                "t9",
+                "t9_votes",
+                "t10",
+                "t10_votes",
+                ]
+
+        cwriter = csv.writer(sys.stdout)
+        cwriter.writerow(headers)
+        for report in reports:
+            cwriter.writerow(report)
 
     sys.stdout.flush()
 

@@ -45,3 +45,24 @@ Individual reports consist of the following structure:
 ```
 
 A combined report contains a JSON list of such entries.
+
+## CSV
+
+A csv report contains the following columns with each row representing an identified dataset.
+
+```
+dataset,  
+load_time,  
+vote_time,  
+votes,  
+t1, t1_votes,  
+t2, t2_votes,  
+t3, t3_votes,  
+t4, t4_votes,  
+t5, t5_votes,  
+t6, t6_votes,  
+t7, t7_votes,  
+t8, t8_votes,  
+t9, t9_votes,  
+t10, t10_votes
+```
