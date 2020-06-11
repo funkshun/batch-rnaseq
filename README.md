@@ -8,14 +8,13 @@ Dependencies can be installed with `pip install -r requirements.txt`
 `./rnaseq [options] DIRECTORY`
 
 The target directory can either be a single dataset containing a `comp_msbwt.npy` file or a directory containing several such directories.
+All reports are dumped to stdout, so redirection is encouraged.
 
 ### Options
 ```shell
 Positional Arguments
--o, --output         The path to the directory where output files are saved
 -p, --probes         The path to the file where the Variant Probes are saved
--r, --report         The type of report generated {stdout, txt, html, json} #HTML is not currently supported
--s, --separate       Generate individual, numbered report files for each dataset
+-r, --report         The type of report generated {txt, html, json} #HTML is not currently supported
 -sdp, --sdp_lookup   File containing mapping between probe sdp vector and dataset names
 -t, --threshold      Minimum necessary occurrences to count probe vote
 ```
