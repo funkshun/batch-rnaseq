@@ -337,8 +337,6 @@ def getSuffix():
 
 def ynquery(message, default='yes'):
 
-    return True
-    
     if default is None:
         message += ' (y/n) '
     elif default == 'yes':
